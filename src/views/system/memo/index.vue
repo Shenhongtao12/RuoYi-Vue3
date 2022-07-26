@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="公告标题" prop="noticeTitle">
         <el-input
           v-model="queryParams.noticeTitle"
@@ -10,8 +10,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -20,8 +20,7 @@
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
-          size="mini"
+          icon="Plus"
           @click="handleAdd"
           v-hasPermi="['system:memo:add']"
         >新增</el-button>
@@ -30,8 +29,7 @@
         <el-button
           type="success"
           plain
-          icon="el-icon-edit"
-          size="mini"
+          icon="Edit"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['system:memo:edit']"
@@ -41,8 +39,7 @@
         <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
-          size="mini"
+          icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['system:memo:remove']"
@@ -52,8 +49,7 @@
         <el-button
           type="warning"
           plain
-          icon="el-icon-download"
-          size="mini"
+          icon="Download"
           @click="handleExport"
           v-hasPermi="['system:memo:export']"
         >导出</el-button>
@@ -72,16 +68,14 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
-            size="mini"
             type="text"
-            icon="el-icon-edit"
+            icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:memo:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
             type="text"
-            icon="el-icon-delete"
+            icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:memo:remove']"
           >删除</el-button>
@@ -99,12 +93,17 @@
 
     <!-- 添加或修改备忘录对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+      <el-form ref="memoRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="公告标题" prop="noticeTitle">
           <el-input v-model="form.noticeTitle" placeholder="请输入公告标题" />
         </el-form-item>
         <el-form-item label="公告内容">
-          <editor v-model="form.noticeContent" :min-height="192"/>
+          <el-input
+            :rows="6"
+            type="textarea"
+            placeholder="请输入内容"
+            v-model="form.noticeContent"
+          />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" placeholder="请输入备注" />
@@ -120,155 +119,151 @@
   </div>
 </template>
 
-<script>
+<script setup name="Memo">
 import { listMemo, getMemo, delMemo, addMemo, updateMemo } from "@/api/system/memo";
 
-export default {
-  name: "Memo",
-  data() {
-    return {
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 备忘录表格数据
-      memoList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        noticeTitle: null,
-        noticeType: null,
-        noticeContent: null,
-        status: null,
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        noticeTitle: [
-          { required: true, message: "公告标题不能为空", trigger: "blur" }
-        ],
-        noticeType: [
-          { required: true, message: "公告类型不能为空", trigger: "change" }
-        ],
-      }
-    };
+const { proxy } = getCurrentInstance();
+
+const memoList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref("");
+
+const data = reactive({
+  form: {},
+  queryParams: {
+    pageNum: 1,
+    pageSize: 10,
+    noticeTitle: null,
+    noticeType: null,
+    noticeContent: null,
+    status: null,
   },
-  created() {
-    this.getList();
-  },
-  methods: {
-    /** 查询备忘录列表 */
-    getList() {
-      this.loading = true;
-      listMemo(this.queryParams).then(response => {
-        this.memoList = response.rows;
-        this.total = response.total;
-        this.loading = false;
-      });
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false;
-      this.reset();
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        noticeId: null,
-        noticeTitle: null,
-        noticeType: null,
-        noticeContent: null,
-        status: "0",
-        createBy: null,
-        createTime: null,
-        updateBy: null,
-        updateTime: null,
-        remark: null
-      };
-      this.resetForm("form");
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1;
-      this.getList();
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm");
-      this.handleQuery();
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.noticeId)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset();
-      this.open = true;
-      this.title = "添加备忘录";
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset();
-      const noticeId = row.noticeId || this.ids
-      getMemo(noticeId).then(response => {
-        this.form = response.data;
-        this.open = true;
-        this.title = "修改备忘录";
-      });
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.noticeId != null) {
-            updateMemo(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addMemo(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
-          }
-        }
-      });
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const noticeIds = row.noticeId || this.ids;
-      this.$modal.confirm('是否确认删除备忘录编号为"' + noticeIds + '"的数据项？').then(function() {
-        return delMemo(noticeIds);
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("删除成功");
-      }).catch(() => {});
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('system/memo/export', {
-        ...this.queryParams
-      }, `memo_${new Date().getTime()}.xlsx`)
-    }
+  rules: {
+    noticeTitle: [
+      { required: true, message: "公告标题不能为空", trigger: "blur" }
+    ],
+    noticeType: [
+      { required: true, message: "公告类型不能为空", trigger: "change" }
+    ],
   }
-};
+});
+
+const { queryParams, form, rules } = toRefs(data);
+
+/** 查询备忘录列表 */
+function getList() {
+  loading.value = true;
+  listMemo(queryParams.value).then(response => {
+    memoList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
+}
+
+// 取消按钮
+function cancel() {
+  open.value = false;
+  reset();
+}
+
+// 表单重置
+function reset() {
+  form.value = {
+    noticeId: null,
+    noticeTitle: null,
+    noticeType: null,
+    noticeContent: null,
+    status: "0",
+    createBy: null,
+    createTime: null,
+    updateBy: null,
+    updateTime: null,
+    remark: null
+  };
+  proxy.resetForm("memoRef");
+}
+
+/** 搜索按钮操作 */
+function handleQuery() {
+  queryParams.value.pageNum = 1;
+  getList();
+}
+
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm("queryRef");
+  handleQuery();
+}
+
+// 多选框选中数据
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.noticeId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
+}
+
+/** 新增按钮操作 */
+function handleAdd() {
+  reset();
+  open.value = true;
+  title.value = "添加备忘录";
+}
+
+/** 修改按钮操作 */
+function handleUpdate(row) {
+  reset();
+  const noticeId = row.noticeId || ids.value
+  getMemo(noticeId).then(response => {
+    form.value = response.data;
+    open.value = true;
+    title.value = "修改备忘录";
+  });
+}
+
+/** 提交按钮 */
+function submitForm() {
+  proxy.$refs["memoRef"].validate(valid => {
+    if (valid) {
+      if (form.value.noticeId != null) {
+        updateMemo(form.value).then(response => {
+          proxy.$modal.msgSuccess("修改成功");
+          open.value = false;
+          getList();
+        });
+      } else {
+        addMemo(form.value).then(response => {
+          proxy.$modal.msgSuccess("新增成功");
+          open.value = false;
+          getList();
+        });
+      }
+    }
+  });
+}
+
+/** 删除按钮操作 */
+function handleDelete(row) {
+  const noticeIds = row.noticeId || ids.value;
+  proxy.$modal.confirm('是否确认删除备忘录编号为"' + noticeIds + '"的数据项？').then(function() {
+    return delMemo(noticeIds);
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("删除成功");
+  }).catch(() => {});
+}
+
+/** 导出按钮操作 */
+function handleExport() {
+  proxy.download('system/memo/export', {
+    ...queryParams.value
+  }, `memo_${new Date().getTime()}.xlsx`)
+}
+
+getList();
 </script>

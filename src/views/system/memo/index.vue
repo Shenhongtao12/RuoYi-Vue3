@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="公告标题" prop="noticeTitle">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
+      <el-form-item label="Memo标题" prop="noticeTitle">
         <el-input
           v-model="queryParams.noticeTitle"
-          placeholder="请输入公告标题"
+          placeholder="请输入Memo标题"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -59,11 +59,11 @@
 
     <el-table v-loading="loading" :data="memoList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="公告ID" align="center" prop="noticeId" />
-      <el-table-column label="公告标题" align="center" prop="noticeTitle" />
-      <el-table-column label="公告类型" align="center" prop="noticeType" />
-      <el-table-column label="公告内容" align="center" prop="noticeContent" />
-      <el-table-column label="公告状态" align="center" prop="status" />
+      <el-table-column label="Memo ID" align="center" prop="noticeId" />
+      <el-table-column label="Memo标题" align="center" prop="noticeTitle" />
+      <el-table-column label="Memo类型" align="center" prop="noticeType" />
+      <el-table-column label="Memo内容" align="center" prop="noticeContent" />
+      <el-table-column label="Memo状态" align="center" prop="status" />
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
@@ -94,14 +94,14 @@
     <!-- 添加或修改备忘录对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="memoRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="公告标题" prop="noticeTitle">
-          <el-input v-model="form.noticeTitle" placeholder="请输入公告标题" />
+        <el-form-item label="Memo标题" prop="noticeTitle">
+          <el-input v-model="form.noticeTitle" placeholder="请输入Memo标题" />
         </el-form-item>
-        <el-form-item label="公告内容">
+        <el-form-item label="Memo内容">
           <el-input
             :rows="6"
             type="textarea"
-            placeholder="请输入内容"
+            placeholder="请输入Memo"
             v-model="form.noticeContent"
           />
         </el-form-item>
@@ -146,10 +146,10 @@ const data = reactive({
   },
   rules: {
     noticeTitle: [
-      { required: true, message: "公告标题不能为空", trigger: "blur" }
+      { required: true, message: "Memo标题不能为空", trigger: "blur" }
     ],
     noticeType: [
-      { required: true, message: "公告类型不能为空", trigger: "change" }
+      { required: true, message: "Memo类型不能为空", trigger: "change" }
     ],
   }
 });

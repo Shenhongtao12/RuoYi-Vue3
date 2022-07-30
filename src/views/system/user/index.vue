@@ -8,7 +8,7 @@
                   v-model="deptName"
                   placeholder="请输入部门名称"
                   clearable
-                  prefix-icon="el-icon-search"
+                  prefix-icon="Search"
                   style="margin-bottom: 20px"
                />
             </div>
@@ -19,6 +19,7 @@
                   :expand-on-click-node="false"
                   :filter-node-method="filterNode"
                   ref="deptTreeRef"
+                  highlight-current
                   default-expand-all
                   @node-click="handleNodeClick"
                />
@@ -151,36 +152,32 @@
                </el-table-column>
                <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
                   <template #default="scope">
-                     <el-tooltip content="修改" placement="top">
+                     <el-tooltip content="修改" placement="top" v-if="scope.row.userId !== 1">
                         <el-button
-                           v-if="scope.row.userId !== 1"
                            type="text"
                            icon="Edit"
                            @click="handleUpdate(scope.row)"
                            v-hasPermi="['system:user:edit']"
                         ></el-button>
                      </el-tooltip>
-                     <el-tooltip content="删除" placement="top">
+                     <el-tooltip content="删除" placement="top" v-if="scope.row.userId !== 1">
                         <el-button
-                           v-if="scope.row.userId !== 1"
                            type="text"
                            icon="Delete"
                            @click="handleDelete(scope.row)"
                            v-hasPermi="['system:user:remove']"
                         ></el-button>
                      </el-tooltip>
-                     <el-tooltip content="重置密码" placement="top">
+                     <el-tooltip content="重置密码" placement="top" v-if="scope.row.userId !== 1">
                         <el-button
-                           v-if="scope.row.userId !== 1"
                            type="text"
                            icon="Key"
                            @click="handleResetPwd(scope.row)"
                            v-hasPermi="['system:user:resetPwd']"
                         ></el-button>
                      </el-tooltip>
-                     <el-tooltip content="分配角色" placement="top">
+                     <el-tooltip content="分配角色" placement="top" v-if="scope.row.userId !== 1">
                         <el-button
-                           v-if="scope.row.userId !== 1"
                            type="text"
                            icon="CircleCheck"
                            @click="handleAuthRole(scope.row)"
@@ -211,11 +208,13 @@
                </el-col>
                <el-col :span="12">
                   <el-form-item label="归属部门" prop="deptId">
-                     <tree-select
-                        v-model:value="form.deptId"
-                        :options="deptOptions"
+                     <el-tree-select
+                        v-model="form.deptId"
+                        :data="deptOptions"
+                        :props="{ value: 'id', label: 'label', children: 'children' }"
+                        value-key="id"
                         placeholder="请选择归属部门"
-                        :objMap="{ value: 'id', label: 'label', children: 'children' }"
+                        check-strictly
                      />
                   </el-form-item>
                </el-col>
@@ -386,7 +385,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "system/user/importData"
+  url: import.meta.env.VITE_APP_BASE_API + "/system/user/importData"
 });
 // 列显隐信息
 const columns = ref([
@@ -413,7 +412,7 @@ const data = reactive({
     userName: [{ required: true, message: "用户名称不能为空", trigger: "blur" }, { min: 2, max: 20, message: "用户名称长度必须介于 2 和 20 之间", trigger: "blur" }],
     nickName: [{ required: true, message: "用户昵称不能为空", trigger: "blur" }],
     password: [{ required: true, message: "用户密码不能为空", trigger: "blur" }, { min: 5, max: 20, message: "用户密码长度必须介于 5 和 20 之间", trigger: "blur" }],
-    email: [{ type: "email", message: "'请输入正确的邮箱地址", trigger: ["blur", "change"] }],
+    email: [{ type: "email", message: "请输入正确的邮箱地址", trigger: ["blur", "change"] }],
     phonenumber: [{ pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/, message: "请输入正确的手机号码", trigger: "blur" }]
   }
 });
@@ -543,7 +542,7 @@ const handleFileUploadProgress = (event, file, fileList) => {
 const handleFileSuccess = (response, file, fileList) => {
   upload.open = false;
   upload.isUploading = false;
-  proxy.$refs["uploadRef"].clearFiles();
+  proxy.$refs["uploadRef"].handleRemove(file);
   proxy.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
   getList();
 };
@@ -592,7 +591,7 @@ function handleAdd() {
     roleOptions.value = response.roles;
     open.value = true;
     title.value = "添加用户";
-    form.password.value = initPassword.value;
+    form.value.password = initPassword.value;
   });
 };
 /** 修改按钮操作 */

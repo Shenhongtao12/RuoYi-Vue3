@@ -7,6 +7,10 @@
     position: relative;
   }
 
+  .sidebarHide {
+    margin-left: 0!important;
+  }
+
   .sidebar-container {
     -webkit-transition: width .28s;
     transition: width 0.28s;
@@ -66,10 +70,14 @@
       width: 100% !important;
     }
 
-    .el-menu-item, .el-sub-menu__title {
+    .el-menu-item, .menu-title {
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
+    }
+
+    .el-menu-item .el-menu-tooltip__trigger {
+      display: inline-block !important;
     }
 
     // menu hover

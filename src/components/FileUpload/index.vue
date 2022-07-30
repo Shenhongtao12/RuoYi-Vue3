@@ -1,6 +1,7 @@
 <template>
   <div class="upload-file">
     <el-upload
+      multiple
       :action="uploadFileUrl"
       :before-upload="handleBeforeUpload"
       :file-list="fileList"
@@ -15,15 +16,14 @@
     >
       <!-- 上传按钮 -->
       <el-button type="primary">选取文件</el-button>
-      <!-- 上传提示 -->
-      <div class="el-upload__tip" v-if="showTip">
-        请上传
-        <template v-if="fileSize"> 大小不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b> </template>
-        <template v-if="fileType"> 格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> </template>
-        的文件
-      </div>
     </el-upload>
-
+    <!-- 上传提示 -->
+    <div class="el-upload__tip" v-if="showTip">
+      请上传
+      <template v-if="fileSize"> 大小不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b> </template>
+      <template v-if="fileType"> 格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> </template>
+      的文件
+    </div>
     <!-- 文件列表 -->
     <transition-group class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
       <li :key="file.uid" class="el-upload-list__item ele-upload-list__item-content" v-for="(file, index) in fileList">
@@ -67,6 +67,8 @@ const props = defineProps({
 
 const { proxy } = getCurrentInstance();
 const emit = defineEmits();
+const number = ref(0);
+const uploadList = ref([]);
 const baseUrl = import.meta.env.VITE_APP_BASE_API;
 const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + "/common/upload"); // 上传的图片服务器地址
 const headers = ref({ Authorization: "Bearer " + getToken() });
@@ -92,7 +94,7 @@ watch(() => props.modelValue, val => {
     fileList.value = [];
     return [];
   }
-});
+},{ deep: true, immediate: true });
 
 // 上传前校检格式和大小
 function handleBeforeUpload(file) {
@@ -120,6 +122,8 @@ function handleBeforeUpload(file) {
       return false;
     }
   }
+  proxy.$modal.loading("正在上传文件，请稍候...");
+  number.value++;
   return true;
 }
 
@@ -130,14 +134,19 @@ function handleExceed() {
 
 // 上传失败
 function handleUploadError(err) {
-  proxy.$modal.msgError("上传失败");
+  proxy.$modal.msgError("上传文件失败");
 }
 
 // 上传成功回调
 function handleUploadSuccess(res, file) {
-  proxy.$modal.msgSuccess("上传成功");
-  fileList.value.push({ name: res.fileName, url: res.fileName });
-  emit("update:modelValue", listToString(fileList.value));
+  uploadList.value.push({ name: res.fileName, url: res.fileName });
+  if (uploadList.value.length === number.value) {
+    fileList.value = fileList.value.filter(f => f.url !== undefined).concat(uploadList.value);
+    uploadList.value = [];
+    number.value = 0;
+    emit("update:modelValue", listToString(fileList.value));
+    proxy.$modal.closeLoading();
+  }
 }
 
 // 删除文件
@@ -149,7 +158,7 @@ function handleDelete(index) {
 // 获取文件名称
 function getFileName(name) {
   if (name.lastIndexOf("/") > -1) {
-    return name.slice(name.lastIndexOf("/") + 1).toLowerCase();
+    return name.slice(name.lastIndexOf("/") + 1);
   } else {
     return "";
   }
@@ -160,7 +169,9 @@ function listToString(list, separator) {
   let strs = "";
   separator = separator || ",";
   for (let i in list) {
-    strs += list[i].url + separator;
+    if(undefined !== list[i].url) {
+      strs += list[i].url + separator;
+    }
   }
   return strs != '' ? strs.substr(0, strs.length - 1) : '';
 }

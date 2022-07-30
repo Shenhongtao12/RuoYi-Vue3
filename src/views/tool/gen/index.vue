@@ -161,8 +161,9 @@
           v-for="(value, key) in preview.data"
           :label="key.substring(key.lastIndexOf('/')+1,key.indexOf('.vm'))"
           :name="key.substring(key.lastIndexOf('/')+1,key.indexOf('.vm'))"
-          :key="key"
+          :key="value"
         >
+          <el-link :underline="false" icon="DocumentCopy" v-copyText="value" v-copyText:callback="copyTextSuccess" style="float:right">&nbsp;复制</el-link>
           <pre>{{ value }}</pre>
         </el-tab-pane>
       </el-tabs>
@@ -176,6 +177,7 @@ import { listTable, previewTable, delTable, genCode, synchDb } from "@/api/tool/
 import router from "@/router";
 import importTable from "./importTable";
 
+const route = useRoute();
 const { proxy } = getCurrentInstance();
 
 const tableList = ref([]);
@@ -187,6 +189,7 @@ const multiple = ref(true);
 const total = ref(0);
 const tableNames = ref([]);
 const dateRange = ref([]);
+const uniqueId = ref("");
 
 const data = reactive({
   queryParams: {
@@ -204,6 +207,17 @@ const data = reactive({
 });
 
 const { queryParams, preview } = toRefs(data);
+
+onActivated(() => {
+  const time = route.query.t;
+  if (time != null && time != uniqueId.value) {
+    uniqueId.value = time;
+    queryParams.value.pageNum = Number(route.query.pageNum);
+    dateRange.value = [];
+    proxy.resetForm("queryForm");
+    getList();
+  }
+})
 
 /** 查询表集合 */
 function getList() {
@@ -261,6 +275,10 @@ function handlePreview(row) {
     preview.value.activeName = "domain.java";
   });
 }
+/** 复制代码成功 */
+function copyTextSuccess() {
+  proxy.$modal.msgSuccess("复制成功");
+}
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.tableId);
@@ -271,7 +289,7 @@ function handleSelectionChange(selection) {
 /** 修改按钮操作 */
 function handleEditTable(row) {
   const tableId = row.tableId || ids.value[0];
-  router.push({ path: "/tool/gen-edit/index", query: { tableId: tableId, pageNum: queryParams.value.pageNum } });
+  router.push({ path: "/tool/gen-edit/index/" + tableId, query: { pageNum: queryParams.value.pageNum } });
 }
 /** 删除按钮操作 */
 function handleDelete(row) {

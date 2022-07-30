@@ -149,13 +149,13 @@ function submitForm() {
   Promise.all([basicForm, genForm].map(getFormPromise)).then(res => {
     const validateResult = res.every(item => !!item);
     if (validateResult) {
-      const genTable = Object.assign({}, basicForm.model, genForm.model);
+      const genTable = Object.assign({}, info.value);
       genTable.columns = columns.value;
       genTable.params = {
-        treeCode: genTable.treeCode,
-        treeName: genTable.treeName,
-        treeParentCode: genTable.treeParentCode,
-        parentMenuId: genTable.parentMenuId
+        treeCode: info.value.treeCode,
+        treeName: info.value.treeName,
+        treeParentCode: info.value.treeParentCode,
+        parentMenuId: info.value.parentMenuId
       };
       updateGenTable(genTable).then(res => {
         proxy.$modal.msgSuccess(res.msg);
@@ -181,7 +181,7 @@ function close() {
 }
 
 (() => {
-  const tableId = route.query && route.query.tableId;
+  const tableId = route.params && route.params.tableId;
   if (tableId) {
     // 获取表详细信息
     getGenTable(tableId).then(res => {

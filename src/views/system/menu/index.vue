@@ -103,11 +103,13 @@
             <el-row>
                <el-col :span="24">
                   <el-form-item label="上级菜单">
-                     <tree-select
-                        v-model:value="form.parentId"
-                        :options="menuOptions"
-                        :objMap="{ value: 'menuId', label: 'menuName', children: 'children' }"
+                     <el-tree-select
+                        v-model="form.parentId"
+                        :data="menuOptions"
+                        :props="{ value: 'menuId', label: 'menuName', children: 'children' }"
+                        value-key="menuId"
                         placeholder="选择上级菜单"
+                        check-strictly
                      />
                   </el-form-item>
                </el-col>
@@ -130,7 +132,7 @@
                         @show="showSelectIcon"
                      >
                         <template #reference>
-                           <el-input v-model="form.icon" placeholder="点击选择图标" @click="showSelectIcon" readonly>
+                           <el-input v-model="form.icon" placeholder="点击选择图标" @click="showSelectIcon" v-click-outside="hideSelectIcon" readonly>
                               <template #prefix>
                                  <svg-icon
                                     v-if="form.icon"
@@ -161,7 +163,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择是外链则路由地址需要以`http(s)://`开头" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>是否外链
                         </span>
                      </template>
@@ -176,7 +178,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="访问的路由地址，如：`user`，如外网地址需内链访问则以`http(s)://`开头" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            路由地址
                         </span>
@@ -189,7 +191,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="访问的组件路径，如：`system/user/index`，默认在`views`目录下" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            组件路径
                         </span>
@@ -203,7 +205,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasPermi('system:user:list')`)" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            权限字符
                         </span>
@@ -216,7 +218,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content='访问路由的默认传递参数，如：`{"id": 1, "name": "ry"}`' placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            路由参数
                         </span>
@@ -228,7 +230,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择是则会被`keep-alive`缓存，需要匹配组件的`name`和地址保持一致" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            是否缓存
                         </span>
@@ -244,7 +246,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择隐藏则路由将不会出现在侧边栏，但仍然可以访问" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            显示状态
                         </span>
@@ -263,7 +265,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择停用则路由将不会出现在侧边栏，也不能被访问" placement="top">
-                              <i class="el-icon-question"></i>
+                              <el-icon><question-filled /></el-icon>
                            </el-tooltip>
                            菜单状态
                         </span>
@@ -293,6 +295,7 @@
 import { addMenu, delMenu, getMenu, listMenu, updateMenu } from "@/api/system/menu";
 import SvgIcon from "@/components/SvgIcon";
 import IconSelect from "@/components/IconSelect";
+import { ClickOutside as vClickOutside } from 'element-plus'
 
 const { proxy } = getCurrentInstance();
 const { sys_show_hide, sys_normal_disable } = proxy.useDict("sys_show_hide", "sys_normal_disable");
@@ -332,9 +335,9 @@ function getList() {
   });
 }
 /** 查询菜单下拉树结构 */
-async function getTreeselect() {
+function getTreeselect() {
   menuOptions.value = [];
-  await listMenu().then(response => {
+  listMenu().then(response => {
     const menu = { menuId: 0, menuName: "主类目", children: [] };
     menu.children = proxy.handleTree(response.data, "menuId");
     menuOptions.value.push(menu);
@@ -371,6 +374,14 @@ function selected(name) {
   form.value.icon = name;
   showChooseIcon.value = false;
 }
+/** 图标外层点击隐藏下拉列表 */
+function hideSelectIcon(event) {
+  var elem = event.relatedTarget || event.srcElement || event.target || event.currentTarget;
+  var className = elem.className;
+  if (className !== "el-input__inner") {
+    showChooseIcon.value = false;
+  }
+}
 /** 搜索按钮操作 */
 function handleQuery() {
   getList();
@@ -381,9 +392,9 @@ function resetQuery() {
   handleQuery();
 }
 /** 新增按钮操作 */
-async function handleAdd(row) {
+function handleAdd(row) {
   reset();
-  await getTreeselect();
+  getTreeselect();
   if (row != null && row.menuId) {
     form.value.parentId = row.menuId;
   } else {

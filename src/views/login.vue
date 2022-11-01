@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { getCodeImg } from "@/api/login";
+import { getCodeImg, getIsRegister } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from "@/utils/jsencrypt";
 import useUserStore from '@/store/modules/user'
@@ -135,6 +135,12 @@ function getCode() {
   });
 }
 
+function getIsRegisterConfig() {
+  getIsRegister().then(res => {
+    register.value = res.data == "true";
+  })
+}
+
 function getCookie() {
   const username = Cookies.get("username");
   const password = Cookies.get("password");
@@ -147,6 +153,7 @@ function getCookie() {
 }
 
 getCode();
+getIsRegisterConfig();
 getCookie();
 </script>
 

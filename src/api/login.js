@@ -59,3 +59,15 @@ export function getCodeImg() {
     timeout: 20000
   })
 }
+
+// 是否允许注册
+export function getIsRegister() {
+  return request({
+    url: '/system/config/configKey/getIsRegister',
+    headers: {
+      isToken: false
+    },
+    method: 'get',
+    timeout: 20000
+  })
+}
